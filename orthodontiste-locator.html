@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Localisateur de Cabinet Orthodontiste</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        #sidebar {
+            width: 320px;
+            background: #ffffff;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        
+        #sidebar-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        #sidebar-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        #sidebar-header p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        
+        #sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .control-section {
+            margin-bottom: 24px;
+        }
+        
+        .control-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .control-group {
+            margin-bottom: 16px;
+        }
+        
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 6px;
+        }
+        
+        select, input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            transition: border-color 0.2s;
+        }
+        
+        select:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        
+        .checkbox-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        
+        .checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            flex: 1;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button.secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        #map {
+            flex: 1;
+            position: relative;
+        }
+        
+        .stats-box {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        
+        .stats-box h4 {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .stat-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .legend {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            font-size: 12px;
+            max-width: 200px;
+        }
+        
+        .legend-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 12px;
+            margin-right: 8px;
+            border-radius: 2px;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .marker-cluster {
+            background-color: rgba(102, 126, 234, 0.6);
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        .info-banner {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <div id="sidebar-header">
+            <h1>🦷 Cabinet Orthodontiste</h1>
+            <p>Outil d'aide à la décision d'implantation</p>
+        </div>
+        <div id="sidebar-content">
+            <div class="info-banner">
+                Chargement des données en cours... Cela peut prendre quelques secondes.
+            </div>
+            
+            <div class="control-section">
+                <h3>📊 Visualisation</h3>
+                <div class="control-group">
+                    <label for="indicator-select">Indicateur IRIS</label>
+                    <select id="indicator-select">
+                        <option value="score">Score optimal</option>
+                        <option value="score_normalized">Score normalisé</option>
+                        <option value="population">Population totale</option>
+                        <option value="pop_enfant_ado">Population 6-17 ans</option>
+                        <option value="revenu_median">Revenu médian</option>
+                        <option value="taux_pauvrete">Taux de pauvreté</option>
+                    </select>
+                </div>
+                
+                <div style="background: #e3f2fd; border-left: 3px solid #2196f3; padding: 10px; margin: 10px 0; border-radius: 4px; font-size: 11px;">
+                    <strong>ℹ️ Calcul du score :</strong><br>
+                    • 50% Population enfants/ados (6-17 ans)<br>
+                    • 30% Revenu médian de la zone<br>
+                    • 15% Nombre d'établissements scolaires<br>
+                    • 5% Population totale<br>
+                    • Pénalité si forte concurrence<br>
+                    <br>
+                    <strong>Exemple :</strong><br>
+                    Zone avec 800 enfants, revenu médian 28k€, 3 écoles :<br>
+                    Score = (800×0.5) + (28000/100×0.3) + (3×50×0.15) = <strong>506.5</strong><br>
+                    Si 2 orthodontistes : 506.5 × 0.9 = <strong>455.9</strong>
+                </div>
+                
+                <div class="control-group">
+                    <label>Couches visibles</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="layer-iris" checked>
+                            <label for="layer-iris">Zones IRIS (colorées)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="layer-ortho" checked>
+                            <label for="layer-ortho">Orthodontistes</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="layer-gares">
+                            <label for="layer-gares">Gares existantes</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="layer-gares-futures">
+                            <label for="layer-gares-futures">Gares futures</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="legend-container" style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-top: 10px;">
+                    <strong style="font-size: 12px; display: block; margin-bottom: 8px;">Légende des couleurs</strong>
+                    <div id="legend-content" style="font-size: 11px;"></div>
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <h3>🎯 Analyse par rayon</h3>
+                <div class="control-group">
+                    <label for="radius-input">Rayon d'analyse (km)</label>
+                    <input type="number" id="radius-input" value="2" min="0.5" max="10" step="0.5">
+                </div>
+                <button id="select-radius-btn">
+                    Sélectionner un point sur la carte
+                </button>
+                <div class="stats-box" id="radius-stats" style="display: none;">
+                    <h4>Statistiques du rayon</h4>
+                    <div id="stats-content"></div>
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <h3>🔍 Emplacement optimal</h3>
+                <div class="control-group">
+                    <label>Départements à analyser</label>
+                    <div class="checkbox-group" id="dept-checkboxes">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="dept-75" value="75" checked>
+                            <label for="dept-75">75 - Paris</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="dept-92" value="92" checked>
+                            <label for="dept-92">92 - Hauts-de-Seine</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="dept-93" value="93">
+                            <label for="dept-93">93 - Seine-Saint-Denis</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="dept-94" value="94">
+                            <label for="dept-94">94 - Val-de-Marne</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="dept-91" value="91">
+                            <label for="dept-91">91 - Essonne</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="dept-77" value="77">
+                            <label for="dept-77">77 - Seine-et-Marne</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="dept-78" value="78">
+                            <label for="dept-78">78 - Yvelines</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="dept-95" value="95">
+                            <label for="dept-95">95 - Val-d'Oise</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="commune-search">Communes spécifiques (optionnel)</label>
+                    <input type="text" id="commune-search" placeholder="Rechercher une commune..." style="margin-bottom: 8px;">
+                    <div id="commune-checkboxes" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 8px; background: white;">
+                        <small style="color: #666;">Sélectionnez des départements pour voir les communes</small>
+                    </div>
+                    <div style="margin-top: 6px; font-size: 11px; color: #666;">
+                        <span id="commune-count">0 commune(s) sélectionnée(s)</span>
+                        <button id="clear-communes-btn" style="padding: 4px 8px; font-size: 11px; margin-left: 8px; background: #dc3545; width: auto;">Tout désélectionner</button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="optimal-score">Score à maximiser</label>
+                    <select id="optimal-score">
+                        <option value="score">Score optimal</option>
+                        <option value="score_normalized">Score normalisé</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="optimal-radius">Rayon d'analyse (km)</label>
+                    <input type="number" id="optimal-radius" value="3" min="0.5" max="10" step="0.5">
+                </div>
+                <button id="find-optimal-btn" class="secondary">
+                    Trouver l'emplacement optimal
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="map"></div>
+    
+    <script src="orthodontiste-data.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Variables globales
+        let map;
+        let irisLayer;
+        let orthoLayer;
+        let garesLayer;
+        let garesFuturesLayer;
+        let radiusCircle;
+        let optimalMarker;
+        let selectingRadius = false;
+        
+        let irisData = null;
+        let orthoData = null;
+        let garesData = null;
+        let garesFuturesData = null;
+        let socioData = {};
+        let eduData = {};
+        
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', async () => {
+            initMap();
+            await loadAllData();
+            setupEventListeners();
+            updateVisualization();
+        });
+        
+        function initMap() {
+            map = L.map('map').setView([48.8566, 2.3522], 11);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(map);
+            
+            // Initialiser les couches
+            irisLayer = L.geoJSON(null, {
+                style: feature => ({
+                    fillColor: getColorForFeature(feature),
+                    weight: 1,
+                    opacity: 0.5,
+                    color: '#666',
+                    fillOpacity: 0.6
+                }),
+                onEachFeature: (feature, layer) => {
+                    layer.on('click', () => showIrisPopup(feature, layer));
+                }
+            }).addTo(map);
+            
+            orthoLayer = L.layerGroup().addTo(map);
+            garesLayer = L.layerGroup();
+            garesFuturesLayer = L.layerGroup();
+        }
+        
+        async function loadAllData() {
+            const loadingEl = document.createElement('div');
+            loadingEl.className = 'loading';
+            loadingEl.textContent = 'Chargement des données intégrées...';
+            document.body.appendChild(loadingEl);
+            
+            try {
+                // Utiliser les données intégrées
+                loadingEl.textContent = 'Chargement des données...';
+                
+                irisData = EMBEDDED_IRIS_DATA;
+                orthoData = EMBEDDED_ORTHO_DATA;
+                garesData = EMBEDDED_GARES_DATA;
+                garesFuturesData = EMBEDDED_GARES_FUTURES_DATA;
+                
+                // Parser les CSV intégrés
+                loadingEl.textContent = 'Traitement des données socio-démographiques...';
+                parseEmbeddedCSV();
+                
+                // Enrichir et calculer
+                loadingEl.textContent = 'Calcul des scores...';
+                enrichIrisData();
+                calculateScores();
+                
+                // Initialiser le filtre de communes
+                updateCommuneFilter();
+                
+                document.querySelector('.info-banner').textContent = 
+                    `✓ Données chargées : ${irisData.features.length} zones IRIS, ${orthoData.features.length} orthodontistes`;
+                document.querySelector('.info-banner').style.background = '#d4edda';
+                document.querySelector('.info-banner').style.borderColor = '#28a745';
+                document.querySelector('.info-banner').style.color = '#155724';
+                
+            } catch (error) {
+                console.error('Erreur de chargement:', error);
+                document.querySelector('.info-banner').textContent = 
+                    `⚠ Erreur de chargement : ${error.message}`;
+                document.querySelector('.info-banner').style.background = '#f8d7da';
+                document.querySelector('.info-banner').style.borderColor = '#dc3545';
+                document.querySelector('.info-banner').style.color = '#721c24';
+            } finally {
+                loadingEl.remove();
+            }
+        }
+        
+        function parseEmbeddedCSV() {
+            try {
+                // Parser le CSV socio-économique
+                const socioLines = EMBEDDED_SOCIO_CSV.split('\n');
+                const socioHeaders = socioLines[0].split(';');
+                
+                for (let i = 1; i < socioLines.length; i++) {
+                    if (!socioLines[i].trim()) continue;
+                    const values = socioLines[i].replace('\r', '').split(';');
+                    const iris = values[0];
+                    if (!iris) continue;
+                    
+                    socioData[iris] = {};
+                    socioHeaders.forEach((header, idx) => {
+                        if (idx < values.length) {
+                            socioData[iris][header] = values[idx];
+                        }
+                    });
+                }
+                
+                // Parser le CSV éducation
+                const eduLines = EMBEDDED_EDU_CSV.split('\n');
+                const eduHeaders = eduLines[0].split(';');
+                
+                for (let i = 1; i < eduLines.length; i++) {
+                    if (!eduLines[i].trim()) continue;
+                    const values = eduLines[i].replace('\r', '').split(';');
+                    const iris = values[0];
+                    if (!iris) continue;
+                    
+                    eduData[iris] = {};
+                    eduHeaders.forEach((header, idx) => {
+                        if (idx < values.length) {
+                            eduData[iris][header] = values[idx];
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur parsing CSV:', error);
+            }
+        }
+        
+        function enrichIrisData() {
+            irisData.features.forEach(feature => {
+                // Le fichier iris_enriched.geojson a déjà le code_iris
+                const irisCode = feature.properties.CODE_IRIS || feature.properties.code_iris || feature.properties.IRIS;
+                
+                // Ajouter les données socio-économiques
+                if (irisCode && socioData[irisCode]) {
+                    Object.assign(feature.properties, socioData[irisCode]);
+                }
+                
+                // Ajouter les données d'éducation
+                if (irisCode && eduData[irisCode]) {
+                    Object.assign(feature.properties, eduData[irisCode]);
+                }
+            });
+        }
+        
+        function calculateScores() {
+            // Calculer un score simple basé sur les données disponibles
+            console.log("Début calcul des scores...");
+            
+            let scoresCalculated = 0;
+            
+            irisData.features.forEach(feature => {
+                const p = feature.properties;
+                
+                // Récupérer les valeurs (certaines peuvent venir du CSV)
+                const pop = parseFloat(p.P20_POP) || 0;
+                const pop_0205 = parseFloat(p.P20_POP0205) || 0;
+                const pop_0610 = parseFloat(p.P20_POP0610) || 0;
+                const pop_1114 = parseFloat(p.P20_POP1114) || 0;
+                const pop_1517 = parseFloat(p.P20_POP1517) || 0;
+                const pop_enfants = pop_0205 + pop_0610 + pop_1114 + pop_1517;
+                
+                const revenu_median = parseFloat(p.DISP_MED20) || 0;
+                const revenu_q3 = parseFloat(p.DISP_Q320) || 0;
+                const taux_pauvrete = parseFloat(p.DISP_TP6020) || 0;
+                
+                const nb_ecoles = (parseFloat(p.NB_ECOLE) || 0) + (parseFloat(p.NB_COLLEGE) || 0) + (parseFloat(p.NB_LYCEE) || 0);
+                const nb_prat = parseFloat(p['Nombre de prat']) || 0;
+                
+                // Calculer un score simple et robuste
+                // Si on a au moins la population d'enfants ou les revenus, on peut calculer un score
+                let score = 0;
+                let score_normalized = 0;
+                
+                if (pop_enfants > 0 || revenu_median > 0 || nb_ecoles > 0) {
+                    // Score absolu (favorise les grandes zones avec beaucoup d'enfants)
+                    score = (
+                        pop_enfants * 0.5 +           // Population enfants (poids fort)
+                        (revenu_median / 100) * 0.3 + // Revenu médian normalisé
+                        nb_ecoles * 50 * 0.15 +       // Écoles (bonus)
+                        pop * 0.05                    // Population totale (poids faible)
+                    );
+                    
+                    // Pénalité pour forte concurrence
+                    if (nb_prat > 0) {
+                        score = score * (1 - Math.min(nb_prat / 20, 0.5)); // Max 50% de pénalité
+                    }
+                    
+                    scoresCalculated++;
+                }
+                
+                // Score normalisé (ratios - favorise la densité)
+                if (pop > 100) {
+                    const ratio_enfants = pop_enfants / pop;
+                    const ratio_ecoles = nb_ecoles / (pop / 1000);
+                    const ratio_prat = nb_prat / (pop / 1000);
+                    
+                    score_normalized = (
+                        ratio_enfants * 1000 * 0.4 +      // Ratio enfants
+                        (revenu_median / 100) * 0.3 +     // Revenu
+                        ratio_ecoles * 50 * 0.2 +         // Densité d'écoles
+                        (1 / (1 + ratio_prat)) * 100 * 0.1 // Faible concurrence
+                    );
+                }
+                
+                // Stocker les résultats
+                feature.properties.score = Math.max(0, score);
+                feature.properties.score_normalized = Math.max(0, score_normalized);
+                feature.properties.population = pop;
+                feature.properties.pop_enfant_ado = pop_enfants;
+                feature.properties.revenu_median = revenu_median;
+                feature.properties.taux_pauvrete = taux_pauvrete;
+                feature.properties.nb_ecoles_total = nb_ecoles;
+                feature.properties.nb_praticiens = nb_prat;
+            });
+            
+            console.log(`✓ Scores calculés pour ${scoresCalculated} zones IRIS`);
+            
+            // Afficher les top 5 pour vérification
+            const top5 = irisData.features
+                .filter(f => f.properties.score > 0)
+                .sort((a, b) => b.properties.score - a.properties.score)
+                .slice(0, 5);
+            
+            console.log("Top 5 scores:");
+            top5.forEach((f, i) => {
+                console.log(`  ${i+1}. ${f.properties.nom_iris} (${f.properties.dep}): ${f.properties.score.toFixed(2)}`);
+            });
+        }
+        
+        function getColorForFeature(feature) {
+            const indicator = document.getElementById('indicator-select').value;
+            let value = feature.properties[indicator] || 0;
+            
+            // Définir les échelles de couleur
+            const colors = ['#f7fbff', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#08306b'];
+            
+            let max = 100;
+            if (indicator === 'population') max = 5000;
+            if (indicator === 'pop_enfant_ado') max = 2000;
+            if (indicator === 'revenu_median') max = 40000;
+            if (indicator === 'taux_pauvrete') max = 50;
+            
+            const index = Math.min(Math.floor((value / max) * colors.length), colors.length - 1);
+            return colors[Math.max(0, index)];
+        }
+        
+        function updateLegend() {
+            const indicator = document.getElementById('indicator-select').value;
+            const legendContent = document.getElementById('legend-content');
+            
+            const colors = ['#f7fbff', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#08306b'];
+            
+            let max = 100;
+            let unit = '';
+            let label = 'Score';
+            
+            if (indicator === 'population') {
+                max = 5000;
+                unit = ' hab.';
+                label = 'Population';
+            } else if (indicator === 'pop_enfant_ado') {
+                max = 2000;
+                unit = ' enf.';
+                label = 'Enfants/ados';
+            } else if (indicator === 'revenu_median') {
+                max = 40000;
+                unit = ' €';
+                label = 'Revenu médian';
+            } else if (indicator === 'taux_pauvrete') {
+                max = 50;
+                unit = ' %';
+                label = 'Taux pauvreté';
+            } else if (indicator === 'score_normalized') {
+                label = 'Score normalisé';
+            }
+            
+            let html = '<div style="display: flex; flex-direction: column; gap: 3px;">';
+            
+            // Afficher min et max
+            html += `<div style="display: flex; align-items: center;">`;
+            html += `<div style="width: 20px; height: 12px; background: ${colors[colors.length-1]}; margin-right: 6px; border-radius: 2px;"></div>`;
+            html += `<span>Élevé (${max}${unit})</span>`;
+            html += `</div>`;
+            
+            html += `<div style="display: flex; align-items: center;">`;
+            html += `<div style="width: 20px; height: 12px; background: ${colors[Math.floor(colors.length/2)]}; margin-right: 6px; border-radius: 2px;"></div>`;
+            html += `<span>Moyen (${Math.round(max/2)}${unit})</span>`;
+            html += `</div>`;
+            
+            html += `<div style="display: flex; align-items: center;">`;
+            html += `<div style="width: 20px; height: 12px; background: ${colors[0]}; margin-right: 6px; border-radius: 2px;"></div>`;
+            html += `<span>Faible (0${unit})</span>`;
+            html += `</div>`;
+            
+            html += '</div>';
+            
+            legendContent.innerHTML = html;
+        }
+        
+        function showIrisPopup(feature, layer) {
+            const p = feature.properties;
+            const popup = `
+                <div style="font-size: 12px;">
+                    <strong>${p.NOM_IRIS || p.nom_iris || 'Zone IRIS'}</strong><br>
+                    <strong>Code:</strong> ${p.CODE_IRIS || p.code_iris}<br>
+                    <strong>Score optimal:</strong> ${(p.score || 0).toFixed(2)}<br>
+                    <strong>Score normalisé:</strong> ${(p.score_normalized || 0).toFixed(2)}<br>
+                    <strong>Population:</strong> ${(p.population || 0).toFixed(0)}<br>
+                    <strong>Pop 6-17 ans:</strong> ${(p.pop_enfant_ado || 0).toFixed(0)}<br>
+                    <strong>Revenu médian:</strong> ${(p.revenu_median || 0).toFixed(0)} €<br>
+                    <strong>Taux pauvreté:</strong> ${(p.taux_pauvrete || 0).toFixed(1)} %
+                </div>
+            `;
+            layer.bindPopup(popup).openPopup();
+        }
+        
+        function updateVisualization() {
+            // Mettre à jour la couche IRIS
+            irisLayer.clearLayers();
+            if (document.getElementById('layer-iris').checked && irisData) {
+                irisLayer.addData(irisData);
+            }
+            
+            // Mettre à jour les orthodontistes
+            orthoLayer.clearLayers();
+            if (document.getElementById('layer-ortho').checked && orthoData) {
+                orthoData.features.forEach(feature => {
+                    const coords = feature.geometry.coordinates;
+                    const props = feature.properties;
+                    
+                    const marker = L.circleMarker([coords[1], coords[0]], {
+                        radius: 6,
+                        fillColor: '#e74c3c',
+                        color: '#c0392b',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    });
+                    
+                    marker.bindPopup(`
+                        <div style="font-size: 12px;">
+                            <strong>🦷 ${props.Nom || 'Orthodontiste'}</strong><br>
+                            <strong>Adresse:</strong> ${props.Adresse || 'N/A'}<br>
+                            <strong>Commune:</strong> ${props.Commune || 'N/A'}<br>
+                            <strong>Praticiens:</strong> ${props['Nombre de prat'] || 1}<br>
+                            <strong>Disponibilité:</strong> ${props['Diponibilité'] || 'N/A'}
+                        </div>
+                    `);
+                    
+                    marker.addTo(orthoLayer);
+                });
+            }
+            
+            // Mettre à jour les gares existantes
+            garesLayer.clearLayers();
+            if (document.getElementById('layer-gares').checked && garesData) {
+                garesData.features.forEach(feature => {
+                    const coords = feature.geometry.coordinates;
+                    const props = feature.properties;
+                    
+                    const marker = L.circleMarker([coords[1], coords[0]], {
+                        radius: 5,
+                        fillColor: '#3498db',
+                        color: '#2980b9',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.7
+                    });
+                    
+                    marker.bindPopup(`
+                        <div style="font-size: 12px;">
+                            <strong>🚉 ${props.nom_gare || props.nom || 'Gare'}</strong><br>
+                            ${props.commune ? `<strong>Commune:</strong> ${props.commune}<br>` : ''}
+                        </div>
+                    `);
+                    
+                    marker.addTo(garesLayer);
+                });
+                garesLayer.addTo(map);
+            } else {
+                map.removeLayer(garesLayer);
+            }
+            
+            // Mettre à jour les gares futures
+            garesFuturesLayer.clearLayers();
+            if (document.getElementById('layer-gares-futures').checked && garesFuturesData) {
+                garesFuturesData.features.forEach(feature => {
+                    let coords = feature.geometry.coordinates;
+                    let lat, lon;
+                    
+                    // Vérifier si les coordonnées sont en Lambert 93 (grandes valeurs)
+                    if (coords[0] > 180 || coords[1] > 90) {
+                        // Conversion Lambert 93 vers WGS84 (approximation simple)
+                        const x = coords[0];
+                        const y = coords[1];
+                        
+                        // Formule approximative pour l'Île-de-France
+                        // Centre approximatif : x=652000, y=6862000 -> lon=2.35, lat=48.85
+                        lon = 2.35 + (x - 652000) / 74000;
+                        lat = 48.85 + (y - 6862000) / 110000;
+                    } else {
+                        // Déjà en WGS84
+                        lon = coords[0];
+                        lat = coords[1];
+                    }
+                    
+                    const props = feature.properties;
+                    
+                    const marker = L.circleMarker([lat, lon], {
+                        radius: 6,
+                        fillColor: '#9b59b6',
+                        color: '#8e44ad',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    });
+                    
+                    marker.bindPopup(`
+                        <div style="font-size: 12px;">
+                            <strong>🚇 ${props.LIBELLE || props.nom_gare || props.nom || 'Gare future'}</strong><br>
+                            ${props.LIGNE ? `<strong>Ligne:</strong> ${props.LIGNE}<br>` : ''}
+                            ${props.ligne ? `<strong>Ligne:</strong> ${props.ligne}<br>` : ''}
+                            <em style="color: #9b59b6;">Gare en projet</em>
+                        </div>
+                    `);
+                    
+                    marker.addTo(garesFuturesLayer);
+                });
+                garesFuturesLayer.addTo(map);
+            } else {
+                map.removeLayer(garesFuturesLayer);
+            }
+        }
+        
+        function setupEventListeners() {
+            // Changement d'indicateur
+            document.getElementById('indicator-select').addEventListener('change', () => {
+                irisLayer.eachLayer(layer => {
+                    layer.setStyle({
+                        fillColor: getColorForFeature(layer.feature)
+                    });
+                });
+                updateLegend();
+            });
+            
+            // Changement de couches
+            ['layer-iris', 'layer-ortho', 'layer-gares', 'layer-gares-futures'].forEach(id => {
+                document.getElementById(id).addEventListener('change', updateVisualization);
+            });
+            
+            // Sélection de rayon
+            document.getElementById('select-radius-btn').addEventListener('click', () => {
+                selectingRadius = !selectingRadius;
+                document.getElementById('select-radius-btn').textContent = 
+                    selectingRadius ? 'Cliquez sur la carte...' : 'Sélectionner un point sur la carte';
+                document.getElementById('select-radius-btn').style.background = 
+                    selectingRadius ? 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' : 
+                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            });
+            
+            map.on('click', (e) => {
+                if (selectingRadius) {
+                    analyzeRadius(e.latlng);
+                    selectingRadius = false;
+                    document.getElementById('select-radius-btn').textContent = 'Sélectionner un point sur la carte';
+                    document.getElementById('select-radius-btn').style.background = 
+                        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                }
+            });
+            
+            // Changement de départements -> mettre à jour les communes
+            document.querySelectorAll('#dept-checkboxes input[type="checkbox"]').forEach(cb => {
+                cb.addEventListener('change', updateCommuneFilter);
+            });
+            
+            // Recherche de communes
+            document.getElementById('commune-search').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const items = document.querySelectorAll('#commune-checkboxes .checkbox-item');
+                
+                items.forEach(item => {
+                    const communeName = item.dataset.communeName || '';
+                    if (communeName.includes(searchTerm)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+            
+            // Bouton pour tout désélectionner
+            document.getElementById('clear-communes-btn').addEventListener('click', () => {
+                document.querySelectorAll('#commune-checkboxes input[type="checkbox"]:checked').forEach(cb => {
+                    cb.checked = false;
+                });
+                updateCommuneCount();
+            });
+            
+            // Trouver l'emplacement optimal
+            document.getElementById('find-optimal-btn').addEventListener('click', findOptimalLocation);
+            
+            // Initialiser la légende
+            updateLegend();
+        }
+        
+        function updateCommuneFilter() {
+            const selectedDepts = [];
+            document.querySelectorAll('#dept-checkboxes input[type="checkbox"]:checked').forEach(cb => {
+                selectedDepts.push(cb.value);
+            });
+            
+            // Extraire les communes des départements sélectionnés
+            const communesMap = {};
+            
+            irisData.features.forEach(feature => {
+                const dept = String(feature.properties.dep || '');
+                if (selectedDepts.includes(dept)) {
+                    const insee = String(feature.properties.insee_com || '');
+                    const nom = feature.properties.nom_com;
+                    if (insee && nom && !communesMap[insee]) {
+                        communesMap[insee] = { nom, dept };
+                    }
+                }
+            });
+            
+            // Trier par nom
+            const communes = Object.entries(communesMap)
+                .map(([insee, data]) => ({ insee, ...data }))
+                .sort((a, b) => a.nom.localeCompare(b.nom));
+            
+            // Remplir le container de checkboxes
+            const container = document.getElementById('commune-checkboxes');
+            container.innerHTML = '';
+            
+            if (communes.length === 0) {
+                container.innerHTML = '<small style="color: #666;">Sélectionnez des départements pour voir les communes</small>';
+                return;
+            }
+            
+            communes.forEach(commune => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                div.style.fontSize = '12px';
+                div.style.padding = '4px 8px';
+                div.dataset.communeName = commune.nom.toLowerCase();
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `commune-${commune.insee}`;
+                checkbox.value = commune.insee;
+                checkbox.addEventListener('change', updateCommuneCount);
+                
+                const label = document.createElement('label');
+                label.htmlFor = `commune-${commune.insee}`;
+                label.textContent = `${commune.nom} (${commune.dept})`;
+                label.style.cursor = 'pointer';
+                label.style.flex = '1';
+                
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                container.appendChild(div);
+            });
+            
+            console.log(`${communes.length} communes disponibles dans les départements sélectionnés`);
+            updateCommuneCount();
+        }
+        
+        function updateCommuneCount() {
+            const checked = document.querySelectorAll('#commune-checkboxes input[type="checkbox"]:checked').length;
+            document.getElementById('commune-count').textContent = `${checked} commune(s) sélectionnée(s)`;
+        }
+        
+        function analyzeRadius(latlng) {
+            const radius = parseFloat(document.getElementById('radius-input').value) * 1000; // Convertir en mètres
+            
+            // Supprimer l'ancien cercle
+            if (radiusCircle) {
+                map.removeLayer(radiusCircle);
+            }
+            
+            // Créer un nouveau cercle
+            radiusCircle = L.circle(latlng, {
+                radius: radius,
+                color: '#f39c12',
+                fillColor: '#f39c12',
+                fillOpacity: 0.2,
+                weight: 2
+            }).addTo(map);
+            
+            // Calculer les statistiques
+            let totalPop = 0;
+            let totalEnfants = 0;
+            let avgRevenu = 0;
+            let avgScore = 0;
+            let nbOrtho = 0;
+            let nbGares = 0;
+            let count = 0;
+            
+            // Analyser les IRIS dans le rayon
+            irisData.features.forEach(feature => {
+                const bounds = L.geoJSON(feature).getBounds();
+                const center = bounds.getCenter();
+                const distance = latlng.distanceTo(center);
+                
+                if (distance <= radius) {
+                    totalPop += feature.properties.population || 0;
+                    totalEnfants += feature.properties.pop_enfant_ado || 0;
+                    avgRevenu += feature.properties.revenu_median || 0;
+                    avgScore += feature.properties.score || 0;
+                    count++;
+                }
+            });
+            
+            // Compter les orthodontistes
+            orthoData.features.forEach(feature => {
+                const coords = feature.geometry.coordinates;
+                const orthoLatLng = L.latLng(coords[1], coords[0]);
+                if (latlng.distanceTo(orthoLatLng) <= radius) {
+                    nbOrtho += parseInt(feature.properties['Nombre de prat']) || 1;
+                }
+            });
+            
+            // Compter les gares
+            if (garesData) {
+                garesData.features.forEach(feature => {
+                    const coords = feature.geometry.coordinates;
+                    const gareLatLng = L.latLng(coords[1], coords[0]);
+                    if (latlng.distanceTo(gareLatLng) <= radius) {
+                        nbGares++;
+                    }
+                });
+            }
+            
+            if (garesFuturesData) {
+                garesFuturesData.features.forEach(feature => {
+                    const coords = feature.geometry.coordinates;
+                    const gareLatLng = L.latLng(coords[1], coords[0]);
+                    if (latlng.distanceTo(gareLatLng) <= radius) {
+                        nbGares++;
+                    }
+                });
+            }
+            
+            // Afficher les statistiques
+            if (count > 0) {
+                avgRevenu /= count;
+                avgScore /= count;
+            }
+            
+            const statsHtml = `
+                <div class="stat-item">
+                    <span class="stat-label">Population totale</span>
+                    <span class="stat-value">${totalPop.toFixed(0)}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Pop 6-17 ans</span>
+                    <span class="stat-value">${totalEnfants.toFixed(0)}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Revenu médian moyen</span>
+                    <span class="stat-value">${avgRevenu.toFixed(0)} €</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Score moyen</span>
+                    <span class="stat-value">${avgScore.toFixed(2)}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Orthodontistes</span>
+                    <span class="stat-value">${nbOrtho}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Gares</span>
+                    <span class="stat-value">${nbGares}</span>
+                </div>
+            `;
+            
+            document.getElementById('stats-content').innerHTML = statsHtml;
+            document.getElementById('radius-stats').style.display = 'block';
+        }
+        
+        function findOptimalLocation() {
+            const scoreType = document.getElementById('optimal-score').value;
+            const radius = parseFloat(document.getElementById('optimal-radius').value) * 1000;
+            
+            // Récupérer les départements sélectionnés
+            const selectedDepts = [];
+            document.querySelectorAll('#dept-checkboxes input[type="checkbox"]:checked').forEach(cb => {
+                selectedDepts.push(cb.value);
+            });
+            
+            if (selectedDepts.length === 0) {
+                alert('Veuillez sélectionner au moins un département');
+                return;
+            }
+            
+            // Récupérer les communes sélectionnées (optionnel)
+            const selectedCommunes = [];
+            document.querySelectorAll('#commune-checkboxes input[type="checkbox"]:checked').forEach(cb => {
+                selectedCommunes.push(cb.value);
+            });
+            
+            const loadingEl = document.createElement('div');
+            loadingEl.className = 'loading';
+            loadingEl.textContent = 'Recherche en cours...';
+            document.body.appendChild(loadingEl);
+            
+            setTimeout(() => {
+                try {
+                    // Filtrer les IRIS par départements ET communes sélectionnés, avec score > 0
+                    const filteredIris = irisData.features.filter(feature => {
+                        const dept = String(feature.properties.dep || feature.properties.DEP);
+                        const insee = String(feature.properties.insee_com || '');
+                        const score = feature.properties[scoreType] || 0;
+                        
+                        // Vérifier le département
+                        if (!selectedDepts.includes(dept)) return false;
+                        
+                        // Si des communes sont sélectionnées, vérifier
+                        if (selectedCommunes.length > 0 && !selectedCommunes.includes(insee)) {
+                            return false;
+                        }
+                        
+                        // Vérifier le score
+                        return score > 0;
+                    });
+                    
+                    console.log(`Recherche parmi ${filteredIris.length} zones IRIS avec score > 0`);
+                    console.log(`Départements: ${selectedDepts.join(', ')}`);
+                    if (selectedCommunes.length > 0) {
+                        console.log(`Communes sélectionnées: ${selectedCommunes.length}`);
+                    }
+                    
+                    if (filteredIris.length === 0) {
+                        loadingEl.remove();
+                        let message = `Aucune zone IRIS trouvée avec un score > 0`;
+                        if (selectedCommunes.length > 0) {
+                            message += ` dans les communes sélectionnées`;
+                        } else {
+                            message += ` dans les départements sélectionnés`;
+                        }
+                        message += `.\n\nVérifiez que les données sont bien chargées ou élargissez votre sélection.`;
+                        alert(message);
+                        return;
+                    }
+                    
+                    // Trier par score et prendre les 50 meilleurs comme candidats
+                    const topIris = filteredIris
+                        .sort((a, b) => (b.properties[scoreType] || 0) - (a.properties[scoreType] || 0))
+                        .slice(0, 50);
+                    
+                    console.log(`Top 50 IRIS sélectionnés comme candidats`);
+                    
+                    let bestScore = -Infinity;
+                    let bestLocation = null;
+                    let bestStats = null;
+                    
+                    // Analyser chaque candidat
+                    topIris.forEach((feature, index) => {
+                        if (index % 10 === 0) {
+                            loadingEl.textContent = `Analyse: ${index}/${topIris.length} candidats...`;
+                        }
+                        
+                        // Obtenir le centre de l'IRIS
+                        const bounds = L.geoJSON(feature).getBounds();
+                        const latlng = bounds.getCenter();
+                        
+                        let totalScore = 0;
+                        let totalPop = 0;
+                        let totalEnfants = 0;
+                        let nbOrtho = 0;
+                        let count = 0;
+                        
+                        // Analyser les IRIS dans le rayon
+                        filteredIris.forEach(nearFeature => {
+                            const nearBounds = L.geoJSON(nearFeature).getBounds();
+                            const nearCenter = nearBounds.getCenter();
+                            const distance = latlng.distanceTo(nearCenter);
+                            
+                            if (distance <= radius) {
+                                const score = nearFeature.properties[scoreType] || 0;
+                                const pop = nearFeature.properties.population || 0;
+                                const enfants = nearFeature.properties.pop_enfant_ado || 0;
+                                
+                                totalScore += score;
+                                totalPop += pop;
+                                totalEnfants += enfants;
+                                count++;
+                            }
+                        });
+                        
+                        // Compter les orthodontistes dans le rayon
+                        orthoData.features.forEach(orthoFeature => {
+                            const coords = orthoFeature.geometry.coordinates;
+                            const orthoLatLng = L.latLng(coords[1], coords[0]);
+                            if (latlng.distanceTo(orthoLatLng) <= radius) {
+                                nbOrtho += parseInt(orthoFeature.properties['Nombre de prat']) || 1;
+                            }
+                        });
+                        
+                        if (count > 0) {
+                            const avgScore = totalScore / count;
+                            
+                            // Bonus/malus selon la concurrence
+                            const competitionFactor = Math.max(0.5, 1 - (nbOrtho / 15));
+                            const adjustedScore = avgScore * competitionFactor;
+                            
+                            if (adjustedScore > bestScore) {
+                                bestScore = adjustedScore;
+                                bestLocation = latlng;
+                                bestStats = { 
+                                    totalPop, 
+                                    totalEnfants,
+                                    count, 
+                                    nbOrtho,
+                                    avgScore: avgScore,
+                                    irisName: feature.properties.nom_iris || feature.properties.NOM_IRIS,
+                                    irisDept: feature.properties.dep,
+                                    irisCommune: feature.properties.nom_com
+                                };
+                            }
+                        }
+                    });
+                    
+                    loadingEl.remove();
+                    
+                    if (bestLocation && bestStats) {
+                        // Supprimer l'ancien marqueur
+                        if (optimalMarker) {
+                            map.removeLayer(optimalMarker);
+                        }
+                        if (radiusCircle) {
+                            map.removeLayer(radiusCircle);
+                        }
+                        
+                        // Créer un nouveau marqueur
+                        optimalMarker = L.marker(bestLocation, {
+                            icon: L.divIcon({
+                                className: 'optimal-marker',
+                                html: '<div style="background: #2ecc71; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size: 24px;">★</div>',
+                                iconSize: [40, 40]
+                            })
+                        }).addTo(map);
+                        
+                        radiusCircle = L.circle(bestLocation, {
+                            radius: radius,
+                            color: '#27ae60',
+                            fillColor: '#2ecc71',
+                            fillOpacity: 0.2,
+                            weight: 2
+                        }).addTo(map);
+                        
+                        const ratioEnfants = bestStats.totalPop > 0 ? ((bestStats.totalEnfants / bestStats.totalPop) * 100).toFixed(1) : '0';
+                        const praticiensPer10k = bestStats.totalPop > 0 ? ((bestStats.nbOrtho / bestStats.totalPop) * 10000).toFixed(1) : '0';
+                        
+                        optimalMarker.bindPopup(`
+                            <div style="font-size: 13px; min-width: 220px;">
+                                <strong style="color: #2ecc71; font-size: 15px;">⭐ Emplacement optimal trouvé</strong><br><br>
+                                <strong>📍 Zone:</strong> ${bestStats.irisName}<br>
+                                <strong>🏙️ Commune:</strong> ${bestStats.irisCommune || 'N/A'}<br>
+                                <strong>📊 Département:</strong> ${bestStats.irisDept}<br><br>
+                                <strong>🎯 Score moyen:</strong> ${bestStats.avgScore.toFixed(1)}<br>
+                                <strong>✨ Score ajusté:</strong> ${bestScore.toFixed(1)}<br><br>
+                                <strong>👥 Population:</strong> ${bestStats.totalPop.toFixed(0)} hab.<br>
+                                <strong>👶 Enfants/ados:</strong> ${bestStats.totalEnfants.toFixed(0)} (${ratioEnfants}%)<br>
+                                <strong>📐 Zones IRIS:</strong> ${bestStats.count}<br><br>
+                                <strong>🦷 Concurrence:</strong><br>
+                                • ${bestStats.nbOrtho} orthodontistes<br>
+                                • ${praticiensPer10k} / 10k habitants<br><br>
+                                <em style="color: #27ae60;">✓ Excellent équilibre potentiel/concurrence</em>
+                            </div>
+                        `).openPopup();
+                        
+                        map.setView(bestLocation, 13);
+                        
+                        // Analyser ce rayon
+                        analyzeRadius(bestLocation);
+                        
+                        console.log("✓ Emplacement optimal trouvé:", bestStats);
+                    } else {
+                        alert('Aucun emplacement trouvé. Cela peut arriver si:\n- Le rayon est trop petit\n- Les scores ne sont pas calculés\n\nEssayez d\'augmenter le rayon à 5 km.');
+                    }
+                } catch (error) {
+                    loadingEl.remove();
+                    console.error('Erreur:', error);
+                    alert('Erreur lors de la recherche: ' + error.message);
+                }
+            }, 100);
+        }
+    </script>
+</body>
+</html>
