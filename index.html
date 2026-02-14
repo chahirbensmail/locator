@@ -429,7 +429,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script>
-        // Variables globales pour les données
+        // Variables globales pour les données (seront remplies après décompression)
         let EMBEDDED_IRIS_DATA = null;
         let EMBEDDED_ORTHO_DATA = null;
         let EMBEDDED_GARES_DATA = null;
@@ -448,10 +448,15 @@
                 // Télécharger le fichier .zip
                 loadingEl.textContent = 'Téléchargement des données...';
                 const response = await fetch('orthodontiste-data.js.zip');
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+                
                 const zipBlob = await response.blob();
                 
                 // Décompresser
-                loadingEl.textContent = 'Décompression des données...';
+                loadingEl.textContent = 'Décompression des données (cela peut prendre 10-20 secondes)...';
                 const zip = await JSZip.loadAsync(zipBlob);
                 
                 // Extraire le fichier JS
@@ -460,14 +465,26 @@
                     throw new Error('Fichier orthodontiste-data.js non trouvé dans le .zip');
                 }
                 
-                loadingEl.textContent = 'Chargement des données...';
+                loadingEl.textContent = 'Extraction des données...';
                 const jsContent = await jsFile.async('text');
                 
-                // Exécuter le code JavaScript
-                eval(jsContent);
+                // Créer un script pour charger les données dans le contexte global
+                const scriptElement = document.createElement('script');
+                scriptElement.textContent = jsContent;
+                document.head.appendChild(scriptElement);
+                
+                // Attendre un peu pour que le script s'exécute
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Vérifier que les données sont chargées
+                if (!EMBEDDED_IRIS_DATA) {
+                    throw new Error('EMBEDDED_IRIS_DATA is not defined');
+                }
                 
                 loadingEl.remove();
                 console.log('✓ Données chargées depuis le .zip');
+                console.log(`  - IRIS: ${EMBEDDED_IRIS_DATA.features.length} zones`);
+                console.log(`  - Orthodontistes: ${EMBEDDED_ORTHO_DATA.features.length}`);
                 
                 // Démarrer l'application
                 initializeApp();
@@ -475,14 +492,14 @@
             } catch (error) {
                 loadingEl.remove();
                 console.error('Erreur lors du chargement du .zip:', error);
-                alert('Erreur lors du chargement des données: ' + error.message);
+                alert('Erreur lors du chargement des données: ' + error.message + '\n\nVérifiez:\n1. Que le fichier orthodontiste-data.js.zip existe\n2. Qu\'il contient bien orthodontiste-data.js\n3. La console (F12) pour plus de détails');
             }
         }
         
         // Initialiser l'application une fois les données chargées
-        function initializeApp() {
+        async function initializeApp() {
             initMap();
-            loadAllData();
+            await loadAllData();
             setupEventListeners();
             updateVisualization();
         }
