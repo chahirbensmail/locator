@@ -474,8 +474,13 @@
                 const jsContent = await jsFile.async('text');
         
                 // ✅ Exécuter directement dans le contexte global
-                eval(jsContent);
-        
+                // Forcer les variables à devenir globales
+                const patchedContent = jsContent
+                    .replace(/const EMBEDDED_/g, 'window.EMBEDDED_')
+                    .replace(/var EMBEDDED_/g, 'window.EMBEDDED_')
+                    .replace(/let EMBEDDED_/g, 'window.EMBEDDED_');
+
+eval(patchedContent);
                 // Vérification
                 if (typeof EMBEDDED_IRIS_DATA === 'undefined') {
                     throw new Error('EMBEDDED_IRIS_DATA non défini après chargement');
