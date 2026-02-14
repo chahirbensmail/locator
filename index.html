@@ -426,9 +426,69 @@
     
     <div id="map"></div>
     
-    <script src="orthodontiste-data.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script>
+        // Variables globales pour les données
+        let EMBEDDED_IRIS_DATA = null;
+        let EMBEDDED_ORTHO_DATA = null;
+        let EMBEDDED_GARES_DATA = null;
+        let EMBEDDED_GARES_FUTURES_DATA = null;
+        let EMBEDDED_SOCIO_CSV = null;
+        let EMBEDDED_EDU_CSV = null;
+        
+        // Charger et décompresser le fichier .zip
+        async function loadZippedData() {
+            const loadingEl = document.createElement('div');
+            loadingEl.className = 'loading';
+            loadingEl.textContent = 'Téléchargement des données (44 MB)...';
+            document.body.appendChild(loadingEl);
+            
+            try {
+                // Télécharger le fichier .zip
+                loadingEl.textContent = 'Téléchargement des données...';
+                const response = await fetch('orthodontiste-data.js.zip');
+                const zipBlob = await response.blob();
+                
+                // Décompresser
+                loadingEl.textContent = 'Décompression des données...';
+                const zip = await JSZip.loadAsync(zipBlob);
+                
+                // Extraire le fichier JS
+                const jsFile = zip.file('orthodontiste-data.js');
+                if (!jsFile) {
+                    throw new Error('Fichier orthodontiste-data.js non trouvé dans le .zip');
+                }
+                
+                loadingEl.textContent = 'Chargement des données...';
+                const jsContent = await jsFile.async('text');
+                
+                // Exécuter le code JavaScript
+                eval(jsContent);
+                
+                loadingEl.remove();
+                console.log('✓ Données chargées depuis le .zip');
+                
+                // Démarrer l'application
+                initializeApp();
+                
+            } catch (error) {
+                loadingEl.remove();
+                console.error('Erreur lors du chargement du .zip:', error);
+                alert('Erreur lors du chargement des données: ' + error.message);
+            }
+        }
+        
+        // Initialiser l'application une fois les données chargées
+        function initializeApp() {
+            initMap();
+            loadAllData();
+            setupEventListeners();
+            updateVisualization();
+        }
+        
+        // Démarrer le chargement au chargement de la page
+        document.addEventListener('DOMContentLoaded', loadZippedData);
         // Variables globales
         let map;
         let irisLayer;
@@ -445,14 +505,6 @@
         let garesFuturesData = null;
         let socioData = {};
         let eduData = {};
-        
-        // Initialisation
-        document.addEventListener('DOMContentLoaded', async () => {
-            initMap();
-            await loadAllData();
-            setupEventListeners();
-            updateVisualization();
-        });
         
         function initMap() {
             map = L.map('map').setView([48.8566, 2.3522], 11);
