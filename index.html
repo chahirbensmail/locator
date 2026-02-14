@@ -436,63 +436,69 @@
         let EMBEDDED_GARES_FUTURES_DATA = null;
         let EMBEDDED_SOCIO_CSV = null;
         let EMBEDDED_EDU_CSV = null;
+
+
         
         // Charger et décompresser le fichier .zip
         async function loadZippedData() {
             const loadingEl = document.createElement('div');
             loadingEl.className = 'loading';
-            loadingEl.textContent = 'Téléchargement des données (44 MB)...';
+            loadingEl.textContent = 'Téléchargement des données...';
             document.body.appendChild(loadingEl);
-            
+        
             try {
-                // Télécharger le fichier .zip
-                loadingEl.textContent = 'Téléchargement des données...';
+                // ⚠ IMPORTANT : nécessite un serveur local (pas file://)
                 const response = await fetch('orthodontiste-data.js.zip');
-                
+        
                 if (!response.ok) {
                     throw new Error(`Erreur HTTP: ${response.status}`);
                 }
-                
+        
                 const zipBlob = await response.blob();
-                
-                // Décompresser
-                loadingEl.textContent = 'Décompression des données (cela peut prendre 10-20 secondes)...';
+        
+                loadingEl.textContent = 'Décompression des données (10-20s)...';
+        
                 const zip = await JSZip.loadAsync(zipBlob);
-                
-                // Extraire le fichier JS
-                const jsFile = zip.file('orthodontiste-data.js');
+        
+                // 🔎 Trouver automatiquement le fichier JS dans le zip
+                const jsFile = Object.values(zip.files).find(file =>
+                    file.name.toLowerCase().endsWith('.js')
+                );
+        
                 if (!jsFile) {
-                    throw new Error('Fichier orthodontiste-data.js non trouvé dans le .zip');
+                    throw new Error('Aucun fichier .js trouvé dans le zip');
                 }
-                
+        
                 loadingEl.textContent = 'Extraction des données...';
+        
                 const jsContent = await jsFile.async('text');
-                
-                // Créer un script pour charger les données dans le contexte global
-                const scriptElement = document.createElement('script');
-                scriptElement.textContent = jsContent;
-                document.head.appendChild(scriptElement);
-                
-                // Attendre un peu pour que le script s'exécute
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                // Vérifier que les données sont chargées
-                if (!EMBEDDED_IRIS_DATA) {
-                    throw new Error('EMBEDDED_IRIS_DATA is not defined');
+        
+                // ✅ Exécuter directement dans le contexte global
+                eval(jsContent);
+        
+                // Vérification
+                if (typeof EMBEDDED_IRIS_DATA === 'undefined') {
+                    throw new Error('EMBEDDED_IRIS_DATA non défini après chargement');
                 }
-                
+        
                 loadingEl.remove();
-                console.log('✓ Données chargées depuis le .zip');
-                console.log(`  - IRIS: ${EMBEDDED_IRIS_DATA.features.length} zones`);
-                console.log(`  - Orthodontistes: ${EMBEDDED_ORTHO_DATA.features.length}`);
-                
-                // Démarrer l'application
+        
+                console.log('✓ Données chargées avec succès');
+                console.log(`IRIS: ${EMBEDDED_IRIS_DATA.features.length}`);
+                console.log(`Orthodontistes: ${EMBEDDED_ORTHO_DATA.features.length}`);
+        
+                // 🚀 Démarrer l'app
                 initializeApp();
-                
+        
             } catch (error) {
                 loadingEl.remove();
-                console.error('Erreur lors du chargement du .zip:', error);
-                alert('Erreur lors du chargement des données: ' + error.message + '\n\nVérifiez:\n1. Que le fichier orthodontiste-data.js.zip existe\n2. Qu\'il contient bien orthodontiste-data.js\n3. La console (F12) pour plus de détails');
+                console.error('Erreur chargement ZIP:', error);
+        
+                alert(
+                    'Erreur lors du chargement des données:\n\n' +
+                    error.message +
+                    '\n\nVérifiez que vous utilisez un serveur local.'
+                );
             }
         }
         
