@@ -280,7 +280,7 @@
         </div>
         <div id="sidebar-content">
             <div class="info-banner">
-                Chargement des données en cours... Cela peut prendre quelques secondes.
+                Chargement des données en cours...
             </div>
             
             <div class="control-section">
@@ -427,75 +427,8 @@
     <div id="map"></div>
     
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="data.js"></script>
     <script>
-        // Variables globales pour les données (seront remplies après décompression)
-        let EMBEDDED_IRIS_DATA = null;
-        let EMBEDDED_ORTHO_DATA = null;
-        let EMBEDDED_GARES_DATA = null;
-        let EMBEDDED_GARES_FUTURES_DATA = null;
-        let EMBEDDED_SOCIO_CSV = null;
-        let EMBEDDED_EDU_CSV = null;
-        
-        // Charger et décompresser le fichier .zip
-        async function loadZippedData() {
-            const loadingEl = document.createElement('div');
-            loadingEl.className = 'loading';
-            loadingEl.textContent = 'Téléchargement des données (44 MB)...';
-            document.body.appendChild(loadingEl);
-            
-            try {
-                // Télécharger le fichier .zip
-                loadingEl.textContent = 'Téléchargement des données...';
-                const response = await fetch('orthodontiste-data_js.zip');
-                
-                if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status}`);
-                }
-                
-                const zipBlob = await response.blob();
-                
-                // Décompresser
-                loadingEl.textContent = 'Décompression des données (cela peut prendre 10-20 secondes)...';
-                const zip = await JSZip.loadAsync(zipBlob);
-                
-                // Extraire le fichier JS
-                const jsFile = zip.file('orthodontiste-data.js');
-                if (!jsFile) {
-                    throw new Error('Fichier orthodontiste-data.js non trouvé dans le .zip');
-                }
-                
-                loadingEl.textContent = 'Extraction des données...';
-                const jsContent = await jsFile.async('text');
-                
-                // Créer un script pour charger les données dans le contexte global
-                const scriptElement = document.createElement('script');
-                scriptElement.textContent = jsContent;
-                document.head.appendChild(scriptElement);
-                
-                // Attendre un peu pour que le script s'exécute
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                // Vérifier que les données sont chargées
-                if (!EMBEDDED_IRIS_DATA) {
-                    throw new Error('EMBEDDED_IRIS_DATA is not defined');
-                }
-                
-                loadingEl.remove();
-                console.log('✓ Données chargées depuis le .zip');
-                console.log(`  - IRIS: ${EMBEDDED_IRIS_DATA.features.length} zones`);
-                console.log(`  - Orthodontistes: ${EMBEDDED_ORTHO_DATA.features.length}`);
-                
-                // Démarrer l'application
-                initializeApp();
-                
-            } catch (error) {
-                loadingEl.remove();
-                console.error('Erreur lors du chargement du .zip:', error);
-                alert('Erreur lors du chargement des données: ' + error.message + '\n\nVérifiez:\n1. Que le fichier orthodontiste-data_js.zip existe\n2. Qu\'il contient bien orthodontiste-data.js\n3. La console (F12) pour plus de détails');
-            }
-        }
-        
         // Initialiser l'application une fois les données chargées
         async function initializeApp() {
             initMap();
@@ -504,8 +437,8 @@
             updateVisualization();
         }
         
-        // Démarrer le chargement au chargement de la page
-        document.addEventListener('DOMContentLoaded', loadZippedData);
+        // Démarrer l'application au chargement de la page
+        document.addEventListener('DOMContentLoaded', initializeApp);
         // Variables globales
         let map;
         let irisLayer;
@@ -615,22 +548,24 @@
                     });
                 }
                 
-                // Parser le CSV éducation
-                const eduLines = EMBEDDED_EDU_CSV.split('\n');
-                const eduHeaders = eduLines[0].split(';');
-                
-                for (let i = 1; i < eduLines.length; i++) {
-                    if (!eduLines[i].trim()) continue;
-                    const values = eduLines[i].replace('\r', '').split(';');
-                    const iris = values[0];
-                    if (!iris) continue;
+                // Parser le CSV établissements
+                if (typeof EMBEDDED_ETABLISSEMENTS_DATA !== 'undefined' && EMBEDDED_ETABLISSEMENTS_DATA) {
+                    const eduLines = EMBEDDED_ETABLISSEMENTS_DATA.split('\n');
+                    const eduHeaders = eduLines[0].split(';');
                     
-                    eduData[iris] = {};
-                    eduHeaders.forEach((header, idx) => {
-                        if (idx < values.length) {
-                            eduData[iris][header] = values[idx];
-                        }
-                    });
+                    for (let i = 1; i < eduLines.length; i++) {
+                        if (!eduLines[i].trim()) continue;
+                        const values = eduLines[i].replace('\r', '').split(';');
+                        const iris = values[0];
+                        if (!iris) continue;
+                        
+                        eduData[iris] = {};
+                        eduHeaders.forEach((header, idx) => {
+                            if (idx < values.length) {
+                                eduData[iris][header] = values[idx];
+                            }
+                        });
+                    }
                 }
             } catch (error) {
                 console.error('Erreur parsing CSV:', error);
