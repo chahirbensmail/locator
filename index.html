@@ -288,8 +288,7 @@
                 <div class="control-group">
                     <label for="indicator-select">Indicateur IRIS</label>
                     <select id="indicator-select">
-                        <option value="score">Score optimal</option>
-                        <option value="score_normalized">Score normalisé</option>
+                        <option value="score">Score de potentiel</option>
                         <option value="population">Population totale</option>
                         <option value="pop_enfant_ado">Population 6-17 ans</option>
                         <option value="revenu_median">Revenu médian</option>
@@ -297,18 +296,38 @@
                     </select>
                 </div>
                 
-                <div style="background: #e3f2fd; border-left: 3px solid #2196f3; padding: 10px; margin: 10px 0; border-radius: 4px; font-size: 11px;">
-                    <strong>ℹ️ Calcul du score :</strong><br>
-                    • 50% Population enfants/ados (6-17 ans)<br>
-                    • 30% Revenu médian de la zone<br>
-                    • 15% Nombre d'établissements scolaires<br>
-                    • 5% Population totale<br>
-                    • Pénalité si forte concurrence<br>
-                    <br>
-                    <strong>Exemple :</strong><br>
-                    Zone avec 800 enfants, revenu médian 28k€, 3 écoles :<br>
-                    Score = (800×0.5) + (28000/100×0.3) + (3×50×0.15) = <strong>506.5</strong><br>
-                    Si 2 orthodontistes : 506.5 × 0.9 = <strong>455.9</strong>
+                <div style="margin: 10px 0;">
+                    <button type="button" id="score-info-toggle" onclick="toggleScoreInfo()" style="width:100%; background:#e3f2fd; color:#1565c0; border:1px solid #90caf9; border-radius:4px; padding:8px 10px; font-size:11px; font-weight:600; text-align:left; cursor:pointer; display:flex; justify-content:space-between; align-items:center; box-shadow:none; transform:none; margin-bottom:0;">
+                        <span>ℹ️ Comment est calculé le score ?</span>
+                        <span id="score-info-arrow">▼</span>
+                    </button>
+                    <div id="score-info-content" style="display:none; background:#e3f2fd; border:1px solid #90caf9; border-top:none; border-radius:0 0 4px 4px; padding:10px; font-size:11px; color:#1a1a1a; line-height:1.6;">
+                        <strong>Score de potentiel (0–100)</strong><br>
+                        Chaque critère est normalisé entre 0 et 100 par rapport au percentile 99 régional (pour exclure les valeurs aberrantes), puis combiné avec les poids ci-dessous :<br><br>
+                        <table style="width:100%; border-collapse:collapse; font-size:10.5px;">
+                            <thead><tr style="background:#bbdefb;">
+                                <th style="padding:3px 5px; text-align:left;">Critère</th>
+                                <th style="padding:3px 5px; text-align:center;">Poids</th>
+                                <th style="padding:3px 5px; text-align:left;">Sens</th>
+                            </tr></thead>
+                            <tbody>
+                                <tr><td style="padding:3px 5px;">Population totale</td><td style="text-align:center;">×1</td><td>↑ mieux</td></tr>
+                                <tr style="background:#ddeeff;"><td style="padding:3px 5px;">Pop. 2–5 ans</td><td style="text-align:center;">×2</td><td>↑ mieux</td></tr>
+                                <tr><td style="padding:3px 5px;">Pop. enfants/ados 2–17 ans</td><td style="text-align:center;">×3</td><td>↑ mieux</td></tr>
+                                <tr style="background:#ddeeff;"><td style="padding:3px 5px;">Part ouvriers (CS7)</td><td style="text-align:center;">×1</td><td>↓ mieux</td></tr>
+                                <tr><td style="padding:3px 5px;">Taux de pauvreté</td><td style="text-align:center;">×1</td><td>↓ mieux <em>(si dispo)</em></td></tr>
+                                <tr style="background:#ddeeff;"><td style="padding:3px 5px;">Revenu 3e quartile</td><td style="text-align:center;">×1</td><td>↑ mieux</td></tr>
+                                <tr><td style="padding:3px 5px;">Revenu médian</td><td style="text-align:center;">×1</td><td>↑ mieux</td></tr>
+                                <tr style="background:#ddeeff;"><td style="padding:3px 5px;">Part cadres (CS3)</td><td style="text-align:center;">×1</td><td>↑ mieux</td></tr>
+                                <tr><td style="padding:3px 5px;">Part prof. intermédiaires (CS4)</td><td style="text-align:center;">×1</td><td>↑ mieux</td></tr>
+                            </tbody>
+                        </table>
+                        <br>
+                        <strong>Formule :</strong><br>
+                        Si taux de pauvreté disponible → somme pondérée (9 critères, total poids=12) ÷ 12 × 100<br>
+                        Sinon → somme pondérée (8 critères, total poids=11) ÷ 11 × 100<br><br>
+                        La normalisation est calculée <strong>par région</strong> (code INSEE <code>reg</code>).
+                    </div>
                 </div>
                 
                 <div class="control-group">
@@ -409,8 +428,7 @@
                 <div class="control-group">
                     <label for="optimal-score">Score à maximiser</label>
                     <select id="optimal-score">
-                        <option value="score">Score optimal</option>
-                        <option value="score_normalized">Score normalisé</option>
+                        <option value="score">Score de potentiel</option>
                     </select>
                 </div>
                 <div class="control-group">
@@ -429,6 +447,19 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="data.js"></script>
     <script>
+        // Toggle accordéon explication score
+        function toggleScoreInfo() {
+            const content = document.getElementById('score-info-content');
+            const arrow   = document.getElementById('score-info-arrow');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                arrow.textContent = '▲';
+            } else {
+                content.style.display = 'none';
+                arrow.textContent = '▼';
+            }
+        }
+
         // Initialiser l'application une fois les données chargées
         async function initializeApp() {
             initMap();
@@ -590,85 +621,153 @@
         }
         
         function calculateScores() {
-            // Calculer un score simple basé sur les données disponibles
-            console.log("Début calcul des scores...");
-            
-            let scoresCalculated = 0;
-            
+            console.log("Début calcul des scores (formule Tableau)...");
+
+            // ── 1. Extraire les valeurs brutes par IRIS ──────────────────────────
+            // Regrouper par région pour calculer les percentiles 99 par région
+            const byReg = {}; // reg → { field → [values] }
+
             irisData.features.forEach(feature => {
                 const p = feature.properties;
-                
-                // Récupérer les valeurs (certaines peuvent venir du CSV)
-                const pop = parseFloat(p.P20_POP) || 0;
-                const pop_0205 = parseFloat(p.P20_POP0205) || 0;
-                const pop_0610 = parseFloat(p.P20_POP0610) || 0;
-                const pop_1114 = parseFloat(p.P20_POP1114) || 0;
-                const pop_1517 = parseFloat(p.P20_POP1517) || 0;
-                const pop_enfants = pop_0205 + pop_0610 + pop_1114 + pop_1517;
-                
-                const revenu_median = parseFloat(p.DISP_MED20) || 0;
-                const revenu_q3 = parseFloat(p.DISP_Q320) || 0;
-                const taux_pauvrete = parseFloat(p.DISP_TP6020) || 0;
-                
-                const nb_ecoles = (parseFloat(p.NB_ECOLE) || 0) + (parseFloat(p.NB_COLLEGE) || 0) + (parseFloat(p.NB_LYCEE) || 0);
-                const nb_prat = parseFloat(p['Nombre de prat']) || 0;
-                
-                // Calculer un score simple et robuste
-                // Si on a au moins la population d'enfants ou les revenus, on peut calculer un score
-                let score = 0;
-                let score_normalized = 0;
-                
-                if (pop_enfants > 0 || revenu_median > 0 || nb_ecoles > 0) {
-                    // Score absolu (favorise les grandes zones avec beaucoup d'enfants)
-                    score = (
-                        pop_enfants * 0.5 +           // Population enfants (poids fort)
-                        (revenu_median / 100) * 0.3 + // Revenu médian normalisé
-                        nb_ecoles * 50 * 0.15 +       // Écoles (bonus)
-                        pop * 0.05                    // Population totale (poids faible)
-                    );
-                    
-                    // Pénalité pour forte concurrence
-                    if (nb_prat > 0) {
-                        score = score * (1 - Math.min(nb_prat / 20, 0.5)); // Max 50% de pénalité
-                    }
-                    
-                    scoresCalculated++;
+                const reg = String(p.reg || '');
+
+                const pop       = parseFloat(p.P20_POP)          || 0;
+                const pop0205   = parseFloat(p.P20_POP0205)       || 0;
+                const pop0610   = parseFloat(p.P20_POP0610)       || 0;
+                const pop1114   = parseFloat(p.P20_POP1114)       || 0;
+                const pop1517   = parseFloat(p.P20_POP1517)       || 0;
+                const enfAdo    = parseFloat(p.enfant_ado)        || (pop0205 + pop0610 + pop1114 + pop1517);
+                const cs7       = parseFloat(p.C20_POP15P_CS7)   || 0;
+                const cs3       = parseFloat(p.C20_POP15P_CS3)   || 0;
+                const cs4       = parseFloat(p.C20_POP15P_CS4)   || 0;
+                const dispQ3    = parseFloat(p.DISP_Q320)        || 0;
+                const dispMed   = parseFloat(p.DISP_MED20)       || 0;
+                const tauxPauv  = (p.DISP_TP6020 && p.DISP_TP6020 !== 'ns') ? parseFloat(p.DISP_TP6020) : null;
+
+                const ratioCs3 = pop > 0 ? cs3 / pop : 0;
+                const ratioCs4 = pop > 0 ? cs4 / pop : 0;
+
+                // Stocker les valeurs calculées sur la feature pour usage ultérieur
+                p._pop      = pop;
+                p._pop0205  = pop0205;
+                p._enfAdo   = enfAdo;
+                p._cs7      = cs7;
+                p._dispQ3   = dispQ3;
+                p._dispMed  = dispMed;
+                p._tauxPauv = tauxPauv;
+                p._ratioCs3 = ratioCs3;
+                p._ratioCs4 = ratioCs4;
+
+                if (!byReg[reg]) {
+                    byReg[reg] = { pop:[], pop0205:[], enfAdo:[], cs7:[], dispQ3:[], dispMed:[], tauxPauv:[], ratioCs3:[], ratioCs4:[] };
                 }
-                
-                // Score normalisé (ratios - favorise la densité)
-                if (pop > 100) {
-                    const ratio_enfants = pop_enfants / pop;
-                    const ratio_ecoles = nb_ecoles / (pop / 1000);
-                    const ratio_prat = nb_prat / (pop / 1000);
-                    
-                    score_normalized = (
-                        ratio_enfants * 1000 * 0.4 +      // Ratio enfants
-                        (revenu_median / 100) * 0.3 +     // Revenu
-                        ratio_ecoles * 50 * 0.2 +         // Densité d'écoles
-                        (1 / (1 + ratio_prat)) * 100 * 0.1 // Faible concurrence
-                    );
-                }
-                
-                // Stocker les résultats
-                feature.properties.score = Math.max(0, score);
-                feature.properties.score_normalized = Math.max(0, score_normalized);
-                feature.properties.population = pop;
-                feature.properties.pop_enfant_ado = pop_enfants;
-                feature.properties.revenu_median = revenu_median;
-                feature.properties.taux_pauvrete = taux_pauvrete;
-                feature.properties.nb_ecoles_total = nb_ecoles;
-                feature.properties.nb_praticiens = nb_prat;
+                byReg[reg].pop.push(pop);
+                byReg[reg].pop0205.push(pop0205);
+                byReg[reg].enfAdo.push(enfAdo);
+                byReg[reg].cs7.push(cs7);
+                byReg[reg].dispQ3.push(dispQ3);
+                byReg[reg].dispMed.push(dispMed);
+                if (tauxPauv !== null) byReg[reg].tauxPauv.push(tauxPauv);
+                byReg[reg].ratioCs3.push(ratioCs3);
+                byReg[reg].ratioCs4.push(ratioCs4);
             });
-            
+
+            // ── 2. Calculer le percentile 99 pour chaque région/champ ────────────
+            function percentile99(arr) {
+                if (!arr || arr.length === 0) return 1;
+                const sorted = arr.slice().filter(v => isFinite(v) && v > 0).sort((a, b) => a - b);
+                if (sorted.length === 0) return 1;
+                const idx = Math.floor(sorted.length * 0.99);
+                return sorted[Math.min(idx, sorted.length - 1)] || 1;
+            }
+
+            const p99 = {};
+            for (const reg in byReg) {
+                p99[reg] = {
+                    pop:      percentile99(byReg[reg].pop),
+                    pop0205:  percentile99(byReg[reg].pop0205),
+                    enfAdo:   percentile99(byReg[reg].enfAdo),
+                    cs7:      percentile99(byReg[reg].cs7),
+                    dispQ3:   percentile99(byReg[reg].dispQ3),
+                    dispMed:  percentile99(byReg[reg].dispMed),
+                    tauxPauv: percentile99(byReg[reg].tauxPauv),
+                    ratioCs3: percentile99(byReg[reg].ratioCs3),
+                    ratioCs4: percentile99(byReg[reg].ratioCs4),
+                };
+            }
+
+            // ── 3. Calculer le score pour chaque IRIS ────────────────────────────
+            function norm(val, p99val) {
+                if (!p99val || p99val === 0) return 0;
+                return Math.min(val / p99val, 1) * 100; // capé à 100
+            }
+
+            let scoresCalculated = 0;
+
+            irisData.features.forEach(feature => {
+                const p   = feature.properties;
+                const reg = String(p.reg || '');
+                const ref = p99[reg] || {};
+
+                const n_pop      = norm(p._pop,      ref.pop);
+                const n_pop0205  = norm(p._pop0205,  ref.pop0205);
+                const n_enfAdo   = norm(p._enfAdo,   ref.enfAdo);
+                const n_cs7_inv  = 100 - norm(p._cs7, ref.cs7);  // inversé
+                const n_dispQ3   = norm(p._dispQ3,   ref.dispQ3);
+                const n_dispMed  = norm(p._dispMed,  ref.dispMed);
+                const n_ratioCs3 = norm(p._ratioCs3, ref.ratioCs3);
+                const n_ratioCs4 = norm(p._ratioCs4, ref.ratioCs4);
+
+                let score = 0;
+
+                if (p._tauxPauv !== null && ref.tauxPauv) {
+                    // Avec taux de pauvreté (9 critères, poids total = 12)
+                    const n_tauxPauv_inv = 100 - norm(p._tauxPauv, ref.tauxPauv);
+                    score = (
+                        1 * n_pop      +
+                        2 * n_pop0205  +
+                        3 * n_enfAdo   +
+                        1 * n_cs7_inv  +
+                        1 * n_tauxPauv_inv +
+                        1 * n_dispQ3   +
+                        1 * n_dispMed  +
+                        1 * n_ratioCs3 +
+                        1 * n_ratioCs4
+                    ) / 12;
+                } else {
+                    // Sans taux de pauvreté (8 critères, poids total = 11)
+                    score = (
+                        1 * n_pop      +
+                        2 * n_pop0205  +
+                        3 * n_enfAdo   +
+                        1 * n_cs7_inv  +
+                        1 * n_dispQ3   +
+                        1 * n_dispMed  +
+                        1 * n_ratioCs3 +
+                        1 * n_ratioCs4
+                    ) / 11;
+                }
+
+                // Stocker les résultats
+                feature.properties.score              = Math.max(0, Math.min(100, score));
+                feature.properties.population         = p._pop;
+                feature.properties.pop_enfant_ado     = p._enfAdo;
+                feature.properties.revenu_median      = p._dispMed;
+                feature.properties.taux_pauvrete      = p._tauxPauv !== null ? p._tauxPauv : 0;
+                feature.properties.nb_ecoles_total    = (parseFloat(p.NB_ECOLE)||0) + (parseFloat(p.NB_COLLEGE)||0) + (parseFloat(p.NB_LYCEE)||0);
+                feature.properties.nb_praticiens      = parseFloat(p['Nombre de prat']) || 0;
+
+                if (score > 0) scoresCalculated++;
+            });
+
             console.log(`✓ Scores calculés pour ${scoresCalculated} zones IRIS`);
-            
-            // Afficher les top 5 pour vérification
+
             const top5 = irisData.features
                 .filter(f => f.properties.score > 0)
                 .sort((a, b) => b.properties.score - a.properties.score)
                 .slice(0, 5);
-            
-            console.log("Top 5 scores:");
+
+            console.log("Top 5 scores de potentiel:");
             top5.forEach((f, i) => {
                 console.log(`  ${i+1}. ${f.properties.nom_iris} (${f.properties.dep}): ${f.properties.score.toFixed(2)}`);
             });
@@ -678,10 +777,9 @@
             const indicator = document.getElementById('indicator-select').value;
             let value = feature.properties[indicator] || 0;
             
-            // Définir les échelles de couleur
             const colors = ['#f7fbff', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#08306b'];
             
-            let max = 100;
+            let max = 100; // score de potentiel : 0-100
             if (indicator === 'population') max = 5000;
             if (indicator === 'pop_enfant_ado') max = 2000;
             if (indicator === 'revenu_median') max = 40000;
@@ -699,7 +797,7 @@
             
             let max = 100;
             let unit = '';
-            let label = 'Score';
+            let label = 'Score de potentiel';
             
             if (indicator === 'population') {
                 max = 5000;
@@ -717,8 +815,6 @@
                 max = 50;
                 unit = ' %';
                 label = 'Taux pauvreté';
-            } else if (indicator === 'score_normalized') {
-                label = 'Score normalisé';
             }
             
             let html = '<div style="display: flex; flex-direction: column; gap: 3px;">';
